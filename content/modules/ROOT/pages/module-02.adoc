@@ -1,0 +1,202 @@
+= Ansible Automation Platform - System Data Collection Lab
+:notoc:
+:toclevels: 3
+:icons: font
+:numbered:
+
+== Introduction: Infrastructure Data Automation
+
+Sometimes you need comprehensive data about your systems - and Ansible is the perfect tool for this task! While Ansible can automate almost everything, infrastructure data gathering is an excellent starting point for automation.
+
+You know you have servers and networks, but auditing and collecting all system data can be overwhelming. Fortunately, Ansible scales perfectly for this challenge, allowing you to gather information across your entire infrastructure efficiently.
+
+[IMPORTANT]
+====
+This lab focuses on *read-only data collection* - a safe way to learn automation without making system changes while building valuable infrastructure awareness.
+====
+
+== Lab Environment Setup
+
+=== Authentication Credentials
+
+Use these credentials to access your Ansible Automation Platform instance:
+
+[cols="1,1", options="header"]
+|===
+| Username | Password
+| admin    | ansible123!
+|===
+
+=== Lab Infrastructure
+
+Your DNS domain for this lab is: *[[ Instruqt-Var key="DOMAIN" hostname="control" ]]*
+
+[cols="1,2", options="header"]
+|===
+| Server        | FQDN
+| Windows Server| windows.[[ Instruqt-Var key="DOMAIN" hostname="control" ]]
+| Node01        | node01.[[ Instruqt-Var key="DOMAIN" hostname="control" ]]
+| Node02        | node02.[[ Instruqt-Var key="DOMAIN" hostname="control" ]]
+| Node03        | node03.[[ Instruqt-Var key="DOMAIN" hostname="control" ]]
+|===
+
+== Exercise 1: Individual Server Analysis
+
+[%collapsible]
+====
+Learn to gather detailed system information from individual servers using Ansible's ad-hoc commands and the Setup module.
+
+=== Step 1: Access Your Inventory
+
+. Navigate to the *aap* lab tab and login with your credentials
+. Go to *Automation Execution* > *Infrastructure* > *Inventories*
+. Select the *Video Platform Inventory*
+. Click the *Hosts* tab to view available systems
+
+[NOTE]
+====
+Inventories are where Ansible tracks all the systems you can automate. You'll see several pre-configured inventories ready for use.
+====
+
+.Node Setup Interface
+image::node01-setup.png[Node setup configuration]
+
+=== Step 2: Execute System Fact Collection
+
+. Select the host *node01*
+. Click *Run command* to launch the ad-hoc command interface
+. From the module dropdown, select *Setup*
+. Click *Next* to proceed
+
+.Setup Module Selection
+image::setup.png[Setup module interface]
+
+=== Step 3: Configure Execution Environment
+
+. Select *Default execution environment* from the available options
+. Click *Next* to continue
+
+[TIP]
+====
+Execution Environments in Ansible Automation Platform contain all the dependencies needed to run your automation tasks safely and consistently.
+====
+
+=== Step 4: Apply Security Credentials
+
+. Choose *Application Nodes* credential for host authentication
+. Click *Next*, then *Finish* to execute the command
+
+=== Step 5: Review System Facts
+
+Once execution completes, you'll see comprehensive system information:
+
+.Complete System Facts Output
+image::setup-output.png[Detailed system facts display]
+
+[IMPORTANT]
+====
+This output contains *all* information that Ansible can automatically gather from the target system - hardware details, network configuration, installed software, and much more.
+====
+====
+
+== Exercise 2: Scalable Infrastructure Reporting
+
+[%collapsible]
+====
+Generate dynamic, comprehensive reports across multiple systems using Ansible templates and Jinja templating for infrastructure awareness at scale.
+
+=== Step 1: Generate Application Server Report
+
+Infrastructure awareness is critical for effective operations. Ansible can create dynamic reports using facts and Jinja templates.
+
+. Navigate to *Automation Execution* > *Templates*
+. Execute the *Application Server Report* template
+. When prompted with options, select *All* to include all available data
+
+[NOTE]
+====
+This template demonstrates how Ansible can combine data from multiple sources to create comprehensive infrastructure reports.
+====
+
+=== Step 2: Review Generated Report
+
+. Navigate to the *Report Server* tab
+. Refresh the page to load the newly generated report
+
+.Server Infrastructure Report
+image::srv-report.png[Comprehensive server report]
+
+=== Step 3: Examine Backup Integration
+
+Notice that backup information is automatically included in the infrastructure report:
+
+.Backup Status Integration
+image::backup-data.png[Backup status in report]
+
+[TIP]
+====
+You can re-run the report template with different criteria options to generate focused reports for specific requirements or system subsets.
+====
+====
+
+== Exercise 3: Security Compliance Reporting
+
+[%collapsible]
+====
+Generate OpenSCAP compliance reports to meet security and regulatory requirements using automated security scanning.
+
+=== Background: Security Reporting Needs
+
+Security teams love comprehensive reports! OpenSCAP (Security Content Automation Protocol) provides standardized security compliance checking that integrates perfectly with Ansible automation.
+
+[IMPORTANT]
+====
+Security has specifically requested compliance reporting for *Node02* - this exercise fulfills that requirement while demonstrating automated compliance workflows.
+====
+
+=== Step 1: Execute OpenSCAP Compliance Scan
+
+. Navigate to *Automation Execution* > *Templates*
+. Execute the *OpenSCAP Report* template
+. Wait for job completion
+
+=== Step 2: Access Compliance Results
+
+. Navigate to the *Compliance Report* tab
+. Browse the available compliance reports
+
+.Compliance Report Directory
+image::compliance_report_folder.png[Compliance report folder structure]
+
+=== Step 3: Review Detailed Compliance Data
+
+Click on any report to view detailed compliance results:
+
+.Detailed Compliance Analysis
+image::compliance_report.png[Detailed compliance report view]
+
+[NOTE]
+====
+OpenSCAP reports provide detailed security posture information, including passed checks, failed requirements, and remediation guidance for compliance gaps.
+====
+====
+
+== Technical Reference: OpenSCAP Automation Code
+
+For those interested in the underlying automation implementation, here's the key code that drives OpenSCAP compliance reporting:
+
+[source,yaml]
+----
+tasks:
+
+- name: Check if the system is RHEL 8
+  ansible.builtin.debug:
+    msg: "This playbook is not compatible with {{ inventory_hostname }} (not RHEL 8)"
+  when: ansible_distribution != "RedHat" or ansible_distribution_major_version != "8"
+  failed_when: false
+
+- name: Run compliance tasks on RHEL 8 systems only
+  when: ansible_distribution == "RedHat" and ansible_distribution_major_version == "8"
+  block:
+    - name: Get our facts straight
+      ansible
