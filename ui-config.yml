@@ -23,5 +23,5 @@ tabs:
     url: /wetty_node02
   - name: ">_ node03"
     url: /wetty_node03
-  # - name: Cloud (PoC)
-  #   url: /cloud
+  - name: Cloud
+    url: /cloud
