@@ -18,4 +18,4 @@ tabs:
   - name: ">_ control"
     url: /wetty
   - name: "Console"
-    url: https://console-embed-showroom.${DOMAIN}
+    url: https://console-embed-openshift-console.${DOMAIN}
