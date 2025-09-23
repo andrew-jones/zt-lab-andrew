@@ -17,11 +17,5 @@ antora:
 tabs:
   - name: ">_ control"
     url: /wetty
-  - name: ">_ node01"
-    url: /wetty_node01
-  - name: ">_ node02"
-    url: /wetty_node02
-  - name: ">_ node03"
-    url: /wetty_node03
-  - name: Cloud
-    url: /cloud
+  - name: "Console"
+    url: https://console-embed-showroom.${DOMAIN}
