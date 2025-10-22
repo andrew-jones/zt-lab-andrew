@@ -10,6 +10,7 @@
       ansible_ssh_port: "{{ lookup('ansible.builtin.env', 'BASTION_PORT') }}"
       ansible_ssh_user: "{{ lookup('ansible.builtin.env', 'BASTION_USER') }}"
       ansible_ssh_pass: "{{ lookup('ansible.builtin.env', 'BASTION_PASSWORD') }}"
+
 - name: Demo Playbook for the ansible-runner API
   hosts: all:!localhost
   gather_facts: false
@@ -36,6 +37,25 @@
     delegate_to: localhost
     register: r_script_test
 
+  - name: Install validation helper (function)
+    when: r_script_test.stat.exists
+    ansible.builtin.copy:
+      dest: "/tmp/runtime-scripts/{{ module_dir }}/env.validation.sh"
+      mode: '0644'
+      content: |
+        fail_validation() {
+          echo "= FAIL VALIDATION BEGIN"
+          if [ "$1" = "-" ] || { [ -z "$*" ] && [ ! -t 0 ]; }; then
+            while IFS= read -r LINE; do
+              echo "$LINE"
+            done
+          elif [ -n "$*" ]; then
+            printf '%s\n' "$@"
+          fi
+          echo "= FAIL VALIDATION END"
+          return 1
+        }
+
   - name: Copy script file
     when: r_script_test.stat.exists
     copy:
@@ -45,9 +65,42 @@
 
   - name: Execute module_stage-host.sh if it exists
     when: r_script_test.stat.exists
-    shell: "sh -x /tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ ansible_host }}.sh > /tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ ansible_host }}.log 2>&1"
+    shell: |
+      set -e
+      [ -f /tmp/runtime-scripts/{{ module_dir }}/env.validation.sh ] && . /tmp/runtime-scripts/{{ module_dir }}/env.validation.sh
+      set -x
+      . /tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ ansible_host }}.sh
     become: true
     register: r_result
+    failed_when: false
+
+  - name: Write combined stdout and stderr to log file
+    ansible.builtin.copy:
+      dest: "/tmp/runtime-scripts/{{ module_dir }}/{{ module_stage }}-{{ ansible_host }}.log"
+      content: "{{ r_result.stdout | default('') }}{% if (r_result.stdout | default('')) and (r_result.stderr | default('')) %}\n{% endif %}{{ r_result.stderr | default('') }}"
+      mode: '0644'
+    become: true
+    when: r_script_test.stat.exists
+
+  - name: Get validation failure
+    when: r_script_test.stat.exists and (r_result.stdout is defined) and ("= FAIL VALIDATION BEGIN" in r_result.stdout)
+    vars:
+      fail_validation_text: >-
+        {{ (r_result.stdout | default(''))
+          | regex_replace('(?ms).*^= FAIL VALIDATION BEGIN\\n', '')
+          | regex_replace('(?ms)\\n?= FAIL VALIDATION END.*', '')
+        }}
+    ansible.builtin.debug:
+      var: fail_validation_text
+
+  - name: Write validation failure to file
+    ansible.builtin.copy:
+      content: "{{ (r_result.stdout | default(''))
+        | regex_replace('(?ms).*^= FAIL VALIDATION BEGIN\\n', '')
+        | regex_replace('(?ms)\\n?= FAIL VALIDATION END.*', '') }}"
+      dest: "{{ job_info_dir }}/validation_failure.out"
+    delegate_to: localhost
+    when: r_script_test.stat.exists and job_info_dir is defined and (r_result.stdout is defined) and ("= FAIL VALIDATION BEGIN" in r_result.stdout)
 
   - name: Output script result
     ansible.builtin.debug:
