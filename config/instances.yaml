@@ -7,14 +7,14 @@ virtualmachines:
     image_size: "30Gi"
     tags:
       - key: "AnsibleGroup"
-        value: "isolated"
+        value: "bastions"
     networks:
       - default
     userdata: |-
       #cloud-config
       user: rhel
       password: ansible123!
-      chpasswd: { expire: False }  
+      chpasswd: { expire: False }
       runcmd:
         - echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/50-cloud-init.conf
         - systemctl reload sshd
@@ -32,7 +32,7 @@ virtualmachines:
       #cloud-config
       user: rhel
       password: ansible123!
-      chpasswd: { expire: False }  
+      chpasswd: { expire: False }
       runcmd:
         - echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/50-cloud-init.conf
         - systemctl reload sshd
@@ -50,7 +50,7 @@ virtualmachines:
       #cloud-config
       user: rhel
       password: ansible123!
-      chpasswd: { expire: False }  
+      chpasswd: { expire: False }
       runcmd:
         - echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/50-cloud-init.conf
         - systemctl reload sshd
