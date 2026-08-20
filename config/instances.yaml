@@ -34,11 +34,18 @@ virtualmachines:
         value: "bastions"
     networks:
       - default
-    userdata: |-
-      #cloud-config
-      user: rhel
-      password: ansible123!
-      chpasswd: { expire: False }
-      runcmd:
-        - echo "PasswordAuthentication yes" > /etc/ssh/sshd_config.d/50-cloud-init.conf
-        - systemctl reload sshd
+    # No custom userdata here on purpose: AgnosticD merges its own
+    # cloud-init (an ssh_authorized_keys entry for its provisioning key,
+    # targeting the image's native default user - "cloud-user" for RHEL
+    # cloud images) with whatever this VM declares here. The previous
+    # `user: rhel` / `password:` / `chpasswd:` block was cloud-init's
+    # singular "user:" directive, which RENAMES the default user to "rhel"
+    # rather than adding it - wiping out the "cloud-user" account that
+    # AgnosticD's SSH provisioning key, wait_for_linux_hosts check, and
+    # ansible_user/remote_user: cloud-user convention all depend on
+    # (confirmed as the root cause of job 150504's
+    # "Permission denied (publickey,...)" on node01). Password auth for
+    # the actual lab user is already handled post-boot by
+    # agnosticd.cloud_vm_workloads.control_user + .asset_injector in the
+    # zt-agd-v2-demo catalog item's pre_software_workloads.bastions, so
+    # this VM doesn't need its own runcmd for that anymore.
