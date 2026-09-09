@@ -1,6 +1,21 @@
 ---
+# pod: grouping smoke test for rhpds/zerotouch-collection PR #10
+# (https://github.com/rhpds/zerotouch-collection/pull/10). "hello" and
+# "cache" below share pod: hello-pod, so zt_containers should bundle them
+# into ONE Deployment/Pod instead of one each. This only validates against
+# zerotouch-collection's feature/zt-containers-multi-pod branch - the pod:
+# key doesn't exist on main yet and will fail validate_argument_spec there.
+# Proves three things once deployed:
+#   1. `oc get pods` shows a single "hello-pod" Deployment/Pod with 2/2
+#      containers ready, not two separate Deployments.
+#   2. localhost reachability between pod-mates: cache's `commands:` below
+#      curls "hello" at localhost:8080 - only possible because they share
+#      one Pod network namespace, not a Service DNS name.
+#   3. the shared "shared-data" emptyDir volume, declared once on "cache",
+#      is deduped and also mounted into "hello" (see its own volumeMounts).
 containers:
   - name: hello
+    pod: hello-pod
     # nginxdemos/hello:plain-text listens on port 80 and needs to mkdir
     # under /var/cache/nginx at startup - both fail under OpenShift's
     # restricted-v2 SCC, which runs the container as a random non-root UID
@@ -14,6 +29,9 @@ containers:
       - name: http
         containerPort: 8080
         protocol: TCP
+    volumeMounts:
+      - name: shared-data
+        mountPath: /shared
     memory: 128Mi
     services:
       - name: hello
@@ -22,6 +40,30 @@ containers:
             port: 80
             protocol: TCP
             targetPort: 8080
+
+  - name: cache
+    pod: hello-pod
+    # redis:7-alpine's default command (redis-server) keeps running with
+    # no custom command needed - zt_containers[] entries have no
+    # command/args override, only image + the fields below. Listens on
+    # 6379, distinct from hello's 8080 - required once containers share a
+    # pod's network namespace (a second bind to the same port would fail
+    # with a real EADDRINUSE, per the role's own README).
+    image: redis:7-alpine
+    ports:
+      - name: redis
+        containerPort: 6379
+        protocol: TCP
+    volumeMounts:
+      - name: shared-data
+        mountPath: /shared
+    volumes:
+      - name: shared-data
+        emptyDir: {}
+    commands:
+      - redis-cli ping
+      - curl -sf http://localhost:8080/ -o /shared/hello-response.txt
+    memory: 64Mi
 
 virtualmachines:
   - name: "node01"
