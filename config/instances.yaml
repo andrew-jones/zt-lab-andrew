@@ -62,7 +62,12 @@ containers:
         emptyDir: {}
     commands:
       - redis-cli ping
-      - curl -sf http://localhost:8080/ -o /shared/hello-response.txt
+      # redis:7-alpine has no curl (only wget/nc, via BusyBox), and
+      # "localhost" resolves to ::1 first - nginx-unprivileged only listens
+      # on IPv4, so that gets "Connection refused" even with a tool that
+      # does exist. Confirmed live: wget + 127.0.0.1 succeeds where both
+      # curl and "localhost" fail.
+      - wget -qO /shared/hello-response.txt http://127.0.0.1:8080/
     memory: 64Mi
 
 virtualmachines:
