@@ -25,6 +25,7 @@ tabs:
     url: /wetty_node03
   - name: Cloud
     url: /cloud
+    initial_state: deferred
   - name: Deferred service
     url: https://noop-${guid}.${domain}/
     initial_state: deferred
