@@ -29,3 +29,6 @@ tabs:
   - name: Deferred service
     url: https://noop-${guid}.${domain}/
     initial_state: deferred
+  - name: "HTTP 403 response"
+    url: https://httpbin.org/status/403
+    accepted_status_codes: [403]
